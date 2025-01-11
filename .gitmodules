@@ -1,0 +1,3 @@
+[submodule "udaEliza"]
+	path = udaEliza
+	url = https://github.com/hetu-project/udaEliza.git
