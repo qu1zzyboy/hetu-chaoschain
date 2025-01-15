@@ -93,7 +93,7 @@ func (app *HACApp) PrepareProposal(ctx context.Context, proposal *abcitypes.Requ
 		}
 	}
 
-	code, err := app.getCode(ctx, prepareTxs)
+	code, err := app.getCode(ctx, st, prepareTxs)
 	if err != nil {
 		app.logger.Error("PrepareProposal getCode failed", "height", uint64(proposal.Height), "err", err)
 		return &abcitypes.ResponsePrepareProposal{}, nil
@@ -216,7 +216,7 @@ func (app *HACApp) ProcessProposal(ctx context.Context, proposal *abcitypes.Requ
 	}
 	st := app.getState(nil)
 
-	code, err := app.getCode(ctx, proposal.Txs)
+	code, err := app.getCode(ctx, st, proposal.Txs)
 	if err != nil {
 		app.logger.Error("ProcessProposal getCode failed", "height", uint64(proposal.Height), "err", err)
 		return res, nil
@@ -277,7 +277,7 @@ func (app *HACApp) Commit(ctx context.Context, commit *abcitypes.RequestCommit) 
 	return &abcitypes.ResponseCommit{}, nil
 }
 
-func (app *HACApp) getCode(ctx context.Context, txs [][]byte) (code tx.VoteCode, err error) {
+func (app *HACApp) getCode(ctx context.Context, st *state.State, txs [][]byte) (code tx.VoteCode, err error) {
 	proposerAct := false
 	for _, stx := range txs {
 		btx, err := app.parseTx(stx, false)
@@ -295,7 +295,11 @@ func (app *HACApp) getCode(ctx context.Context, txs [][]byte) (code tx.VoteCode,
 			if len(stx.Grants) != 1 {
 				return 0, ErrOnlySupportOneGrant
 			}
-			pass, err := app.agentCli.IfGrantNewMember(ctx, stx.Grants[0].Amount, stx.Grants[0].Statement)
+			proposerAct, err := st.GetAccount(btx.Validator)
+			if proposerAct == nil {
+				return 0, errors.New("proposer not found")
+			}
+			pass, err := app.agentCli.IfGrantNewMember(ctx, st.Header().AccountIdx, proposerAct.Address(), stx.Grants[0].Amount, stx.Grants[0].Statement)
 			if err != nil {
 				return 0, err
 			}
@@ -327,7 +331,11 @@ func (app *HACApp) getCode(ctx context.Context, txs [][]byte) (code tx.VoteCode,
 			}
 			proposerAct = true
 			stx := btx.Tx.(*tx.SettleProposalTx)
-			pass, err := app.agentCli.IfAcceptProposal(ctx, stx.Proposal)
+			voterAct, err := st.GetAccount(btx.Validator)
+			if voterAct == nil {
+				return 0, errors.New("voter not found")
+			}
+			pass, err := app.agentCli.IfAcceptProposal(ctx, stx.Proposal, voterAct.Address())
 			if err != nil {
 				return 0, err
 			}

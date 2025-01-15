@@ -1,41 +1,166 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"time"
 
 	"github.com/calehh/hac-app/state"
 	hac_types "github.com/calehh/hac-app/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtlog "github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/rpc/client/http"
+	comethttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
 type Client interface {
 	IfProcessProposal(ctx context.Context, proposer uint64, data []byte) (bool, error)
-	IfAcceptProposal(ctx context.Context, proposal uint64) (bool, error)
-	IfGrantNewMember(ctx context.Context, amount uint64, statement string) (bool, error)
+	IfAcceptProposal(ctx context.Context, proposal uint64, voter string) (bool, error)
+	IfGrantNewMember(ctx context.Context, validator uint64, proposer string, amount uint64, statement string) (bool, error)
+	CommentPropoal(ctx context.Context, proposal uint64, speaker string) (string, error)
+	AddProposal(ctx context.Context, proposal uint64, proposer string, text string) error
+	AddDiscussion(ctx context.Context, proposal uint64, speaker string, text string) error
 }
 
 var _ Client = &MockClient{}
+var _ Client = &ElizaClient{}
+
+type ElizaClient struct {
+	url     string
+	agentId string
+	logger  cmtlog.Logger
+}
+
+func (e *ElizaClient) IfGrantNewMember(ctx context.Context, validator uint64, proposer string, amount uint64, statement string) (bool, error) {
+	url := fmt.Sprintf("%s/%s/votegrant", e.url, e.agentId)
+	body := fmt.Sprintf(`{"grantId":"%d","validatorAddress":"%s","text":"%s"}`, validator, proposer, statement)
+	res, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(body)))
+	if err != nil {
+		return false, err
+	}
+	defer res.Body.Close()
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		e.logger.Error("read response body fail", "err", err)
+		return false, err
+	}
+	var vote VoteResponse
+	err = json.Unmarshal(bodyBytes, &vote)
+	if err != nil {
+		e.logger.Error("unmarshal response body fail", "err", err)
+		return false, err
+	}
+	e.logger.Info("vote grant", "validator", validator, "proposer", proposer, "vote", vote.Vote, "reason", vote.Reason)
+	if vote.Vote == "yes" {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (e *ElizaClient) CommentPropoal(ctx context.Context, proposal uint64, speaker string) (string, error) {
+	url := fmt.Sprintf("%s/%s/discussion", e.url, e.agentId)
+	body := fmt.Sprintf(`{"proposalId":"%d","validatorAddress":"%s","text":"comment"}`, proposal, speaker)
+	res, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(body)))
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		e.logger.Error("read response body fail", "err", err)
+		return "", err
+	}
+	return string(bodyBytes), nil
+}
+
+func (e *ElizaClient) AddDiscussion(ctx context.Context, proposal uint64, speaker string, text string) error {
+	url := fmt.Sprintf("%s/%s/newdiscussion", e.url, e.agentId)
+	body := fmt.Sprintf(`{"proposalId":"%d","validatorAddress":"%s","text":"%s"}`, proposal, speaker, text)
+	res, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(body)))
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	return nil
+}
+
+func (e *ElizaClient) AddProposal(ctx context.Context, proposal uint64, proposer string, text string) error {
+	url := fmt.Sprintf("%s/%s/proposal", e.url, e.agentId)
+	body := fmt.Sprintf(`{"proposalId":"%d","validatorAddress":"%s","text":"%s"}`, proposal, proposer, text)
+	res, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(body)))
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	return nil
+}
+
+type VoteResponse struct {
+	Vote   string `json:"vote"`
+	Reason string `json:"reason"`
+}
+
+func (e *ElizaClient) IfAcceptProposal(ctx context.Context, proposal uint64, voter string) (bool, error) {
+	url := fmt.Sprintf("%s/%s/voteproposal", e.url, e.agentId)
+	body := fmt.Sprintf(`{"proposalId":"%d","validatorAddress":"%s","text":"analyze proposal"}`, proposal, voter)
+	res, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(body)))
+	if err != nil {
+		return false, err
+	}
+	defer res.Body.Close()
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		e.logger.Error("read response body fail", "err", err)
+		return false, err
+	}
+	var vote VoteResponse
+	err = json.Unmarshal(bodyBytes, &vote)
+	if err != nil {
+		e.logger.Error("unmarshal response body fail", "err", err)
+		return false, err
+	}
+	e.logger.Info("vote proposal", "proposal", proposal, "voter", voter, "vote", vote.Vote, "reason", vote.Reason)
+	if vote.Vote == "yes" {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (e *ElizaClient) IfProcessProposal(ctx context.Context, proposer uint64, data []byte) (bool, error) {
+	return true, nil
+}
 
 type MockClient struct {
+}
+
+func (m *MockClient) AddDiscussion(ctx context.Context, proposal uint64, speaker string, text string) error {
+	return nil
+}
+
+func (m *MockClient) AddProposal(ctx context.Context, proposal uint64, proposer string, text string) error {
+	return nil
+}
+
+func (m *MockClient) CommentPropoal(ctx context.Context, proposal uint64, speaker string) (string, error) {
+	return "", nil
 }
 
 func NewMockClient() *MockClient {
 	return &MockClient{}
 }
 
-func (m *MockClient) IfAcceptProposal(ctx context.Context, proposal uint64) (bool, error) {
+func (m *MockClient) IfAcceptProposal(ctx context.Context, proposal uint64, voter string) (bool, error) {
 	return true, nil
 }
 
-func (m *MockClient) IfGrantNewMember(ctx context.Context, amount uint64, statement string) (bool, error) {
+func (m *MockClient) IfGrantNewMember(ctx context.Context, validator uint64, proposer string, amount uint64, statement string) (bool, error) {
 	return true, nil
 }
 
@@ -48,13 +173,13 @@ type ChainIndexer struct {
 	Url           string
 	Height        int64
 	db            *gorm.DB
-	cli           *http.HTTP
+	cli           *comethttp.HTTP
 	eventHandlers map[string]eventHandler
 }
 
 func NewChainIndexer(logger cmtlog.Logger, dbPath string, url string) (*ChainIndexer, error) {
 	logger.Info("NewChainIndexer", "dbPath", dbPath, "url", url)
-	cli, err := http.New(url, "/websocket")
+	cli, err := comethttp.New(url, "/websocket")
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +300,7 @@ func (c *ChainIndexer) handleVote(ctx context.Context, height int64) error {
 		c.logger.Error("get Commit fail", "err", err)
 		if !c.cli.IsRunning() {
 			c.cli.Stop()
-			c.cli, err = http.New(c.Url, "/websocket")
+			c.cli, err = comethttp.New(c.Url, "/websocket")
 			if err != nil {
 				c.logger.Error("reconnect fail", "err", err)
 				return err
@@ -301,7 +426,7 @@ func (c *ChainIndexer) Start(ctx context.Context) {
 			return
 		case <-ticker.C:
 			if c.cli == nil {
-				c.cli, err = http.New(c.Url, "/websocket")
+				c.cli, err = comethttp.New(c.Url, "/websocket")
 				if err != nil {
 					c.logger.Error("connect fail", "err", err)
 					continue
@@ -312,7 +437,7 @@ func (c *ChainIndexer) Start(ctx context.Context) {
 				c.logger.Error("get status fail", "err", err)
 				if !c.cli.IsRunning() {
 					c.cli.Stop()
-					c.cli, err = http.New(c.Url, "/websocket")
+					c.cli, err = comethttp.New(c.Url, "/websocket")
 					if err != nil {
 						c.logger.Error("reconnect fail", "err", err)
 						continue
@@ -327,7 +452,7 @@ func (c *ChainIndexer) Start(ctx context.Context) {
 					c.logger.Error("get status fail", "err", err)
 					if !c.cli.IsRunning() {
 						c.cli.Stop()
-						c.cli, err = http.New(c.Url, "/websocket")
+						c.cli, err = comethttp.New(c.Url, "/websocket")
 						if err != nil {
 							c.logger.Error("reconnect fail", "err", err)
 							continue
@@ -377,7 +502,7 @@ func (c *ChainIndexer) queryAccount(ctx context.Context, index uint64, address s
 		c.logger.Error("ABCIQuery fail", "err", err)
 		if !c.cli.IsRunning() {
 			c.cli.Stop()
-			c.cli, err = http.New(c.Url, "/websocket")
+			c.cli, err = comethttp.New(c.Url, "/websocket")
 			if err != nil {
 				c.logger.Error("reconnect fail", "err", err)
 				return nil, err
