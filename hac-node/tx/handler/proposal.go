@@ -27,19 +27,19 @@ func NewProposalTxHandler(logger cmtlog.Logger) (h *ProposalTxHandler) {
 
 func (h *ProposalTxHandler) Check(ctx context.Context, st *state.State, btx *tx.HACTx) (res *abcitypes.ResponseCheckTx, err error) {
 	res = &abcitypes.ResponseCheckTx{Code: 0}
-	stx := btx.Tx.(*tx.ProposalTx)
-	_, err1 := st.Proposal(stx, btx.Validator, true, tx.VoteIgnoreProposal)
-	if err1 != nil {
-		h.logger.Info("CheckTx ProposalTx fail", "err", err1)
-		res.Code = 1
-		res.Log = err1.Error()
-	}
-	_, err1 = st.Proposal(stx, btx.Validator, true, tx.VoteProcessProposal)
-	if err1 != nil {
-		h.logger.Info("CheckTx ProposalTx fail", "err", err1)
-		res.Code = 1
-		res.Log = err1.Error()
-	}
+	// stx := btx.Tx.(*tx.ProposalTx)
+	// _, err1 := st.Proposal(stx, btx.Validator, true, tx.VoteIgnoreProposal)
+	// if err1 != nil {
+	// 	h.logger.Info("CheckTx ProposalTx fail", "err", err1)
+	// 	res.Code = 1
+	// 	res.Log = err1.Error()
+	// }
+	// _, err1 = st.Proposal(stx, btx.Validator, true, tx.VoteProcessProposal)
+	// if err1 != nil {
+	// 	h.logger.Info("CheckTx ProposalTx fail", "err", err1)
+	// 	res.Code = 1
+	// 	res.Log = err1.Error()
+	// }
 	return
 }
 

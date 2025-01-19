@@ -567,6 +567,13 @@ func (s *State) Proposal(tx *tx.ProposalTx, validator uint64, checkOnly bool, co
 			proposal.Status = hac_types.ProposalStatusProcessing
 		}
 		s.modProposal = &proposal
+
+		a.Nonce += 1
+		v := s.modifiedAcnts[a.Index]
+		v |= ModifiedFlagMod
+		s.modifiedAcnts[a.Index] = v
+		s.acnts[a.Index] = a.Clone()
+
 		event = &hac_types.EventProposal{
 			ProposalIndex:   proposal.Index,
 			ProposerAddress: a.Address(),
@@ -613,6 +620,13 @@ func (s *State) SettleProposal(tx *tx.SettleProposalTx, validator uint64, checkO
 			proposal.Status = hac_types.ProposalStatusRejected
 		}
 		s.modProposal = proposal
+
+		a.Nonce += 1
+		v := s.modifiedAcnts[a.Index]
+		v |= ModifiedFlagMod
+		s.modifiedAcnts[a.Index] = v
+		s.acnts[a.Index] = a.Clone()
+
 		event = &hac_types.EventSettleProposal{
 			Proposer: proposal.Proposer,
 			Proposal: tx.Proposal,
@@ -652,6 +666,13 @@ func (s *State) Dicussion(tx *tx.DiscussionTx, validator uint64, checkOnly bool)
 			Height:         s.header.Height,
 		}
 		s.newDiscussions[s.discussionMaxIndex] = dis
+
+		a.Nonce += 1
+		v := s.modifiedAcnts[a.Index]
+		v |= ModifiedFlagMod
+		s.modifiedAcnts[a.Index] = v
+		s.acnts[a.Index] = a.Clone()
+
 		event = &hac_types.EventDiscussion{
 			Speaker:        a.Index,
 			SpeakerAddress: a.Address(),
@@ -750,6 +771,7 @@ func (s *State) UnStake(tx *tx.RetractTx, validator uint64, checkOnly bool) (eve
 			Amount:    tx.Amount,
 		}
 		a.Stake -= tx.Amount
+		a.Nonce += 1
 		v := s.modifiedAcnts[a.Index]
 		v |= ModifiedFlagMod
 		s.modifiedAcnts[a.Index] = v

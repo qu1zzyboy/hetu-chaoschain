@@ -1,4 +1,4 @@
-//go:build !mock
+//go:build mock
 package main
 
 import (
@@ -86,11 +86,7 @@ func run(cmd *cobra.Command, args []string) {
 	//new agent client
 	agentUrl := strings.TrimRight(appConfig.App.AgentUrl, "/")
 	logger.Info("agent url: %s", agentUrl)
-	agent.ElizaCli, err = agent.NewElizaClient(agentUrl, logger)
-	if err != nil {
-		log.Fatalf("new eliza client err %s", err.Error())
-	}
-	
+	agent.ElizaCli = agent.NewMockClient()
 
 	// new app
 	appConfig.App.Home = homeDir
@@ -163,3 +159,4 @@ func run(cmd *cobra.Command, args []string) {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 }
+

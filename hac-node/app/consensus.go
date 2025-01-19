@@ -37,15 +37,19 @@ func (app *HACApp) parseTx(txDat []byte, allowNonceGap bool) (btx *tx.HACTx, err
 
 func (app *HACApp) CheckTx(ctx context.Context, check *abcitypes.RequestCheckTx) (res *abcitypes.ResponseCheckTx, err error) {
 	res = &abcitypes.ResponseCheckTx{Code: 0}
+	app.logger.Info("check tx")
 	btx, err := app.parseTx(check.Tx, true)
 	if err != nil {
+		app.logger.Error("parse tx fail", "err", err)
 		res.Code = 1
 		res.Log = err.Error()
 		err = nil
 		return
 	}
+	app.logger.Info("check tx", "type", btx.Type)
 	h, ok := app.txHdlrs[btx.Type]
 	if !ok {
+		app.logger.Error("unsupported tx", "type", btx.Type)
 		res.Code = 1
 		res.Log = "unsupported tx"
 		return
@@ -53,6 +57,7 @@ func (app *HACApp) CheckTx(ctx context.Context, check *abcitypes.RequestCheckTx)
 	st := app.db.State()
 	res, err = h.Check(ctx, st, btx)
 	if err != nil {
+		app.logger.Error("check tx fail", "err", err)
 		res.Code = 1
 		res.Log = err.Error()
 		err = nil

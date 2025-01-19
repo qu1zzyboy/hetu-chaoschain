@@ -9,7 +9,6 @@ import (
 	"github.com/calehh/hac-app/crypto"
 	"github.com/calehh/hac-app/tx"
 	"github.com/cometbft/cometbft/rpc/client/http"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/spf13/cobra"
 )
 
@@ -81,6 +80,7 @@ func discussionRun(cmd *cobra.Command, args []string) {
 		fmt.Printf("tx sign data err:%v\n", err)
 		return
 	}
+	println("data to sign:", string(dat))
 	println("data signed:", hex.EncodeToString(dat))
 	sigs := [][]byte{}
 	pv := crypto.LoadFilePV(discussionArgs.Skey)
@@ -100,7 +100,7 @@ func discussionRun(cmd *cobra.Command, args []string) {
 		return
 	}
 	btx.Sig = sigs
-	dat, err = rlp.EncodeToBytes(btx)
+	dat, err = json.Marshal(btx)
 	if err != nil {
 		fmt.Printf("rlp encode tx err:%v\n", err)
 		return

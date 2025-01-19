@@ -2,27 +2,26 @@ package tx
 
 import (
 	"bytes"
-
-	"github.com/ethereum/go-ethereum/rlp"
+	"encoding/json"
 )
 
 type HACTx struct {
-	Version   uint8
-	Type      HACTxType
-	Nonce     uint64
-	Validator uint64
-	Tx        any
-	Sig       [][]byte
+	Version   uint8     `json:"version"`
+	Type      HACTxType `json:"type"`
+	Nonce     uint64    `json:"nonce"`
+	Validator uint64    `json:"validator"`
+	Tx        any       `json:"tx"`
+	Sig       [][]byte  `json:"sig"`
 }
 
 type GrantTx struct {
-	Grants []GrantSt
+	Grants []GrantSt `json:"grants"`
 }
 
 type GrantSt struct {
-	Statement string
-	Amount    uint64
-	Pubkey    []byte
+	Statement string `json:"statement"`
+	Amount    uint64 `json:"amount"`
+	Pubkey    []byte `json:"pubkey"`
 }
 
 func (d *GrantSt) Equal(grant GrantSt) bool {
@@ -33,57 +32,54 @@ func (d *GrantSt) Equal(grant GrantSt) bool {
 }
 
 type DiscussionTx struct {
-	Proposal uint64
-	Data     []byte
+	Proposal uint64 `json:"proposal"`
+	Data     []byte `json:"data"`
 }
 
 type ProposalTx struct {
-	Proposer  uint64
-	EndHeight uint64
-	Data      []byte
+	Proposer  uint64 `json:"proposer"`
+	EndHeight uint64 `json:"endHeight"`
+	Data      []byte `json:"data"`
 }
 
 type SettleProposalTx struct {
-	Proposal uint64
+	Proposal uint64 `json:"proposal"`
 }
 
 type RetractTx struct {
-	Amount uint64
+	Amount uint64 `json:"amount"`
 }
 
 type hacTxTmpl[Tx any] struct {
-	Version   uint8
-	Type      HACTxType
-	Nonce     uint64
-	Validator uint64
-	Tx        Tx
-	Sig       [][]byte
+	Version   uint8     `json:"version"`
+	Type      HACTxType `json:"type"`
+	Nonce     uint64    `json:"nonce"`
+	Validator uint64    `json:"validator"`
+	Tx        Tx        `json:"tx"`
+	Sig       [][]byte  `json:"sig"`
 }
 
 func (tx *HACTx) SigData(ext []byte) (dat []byte, err error) {
 	ntx := *tx
 	ntx.Sig = [][]byte{ext}
-	dat, err = rlp.EncodeToBytes(ntx)
+	dat, err = json.Marshal(ntx)
 	return
 }
 
 func parseHACTxType(dat []byte) HACTxType {
-	n := len(dat)
-	if n < 4 {
+	var tx struct {
+		Type HACTxType `json:"type"`
+	}
+	err := json.Unmarshal(dat, &tx)
+	if err != nil {
 		return HACTxTypeUnknown
 	}
-	v := dat[0]
-	if v >= 0xc2 && v <= 0xf7 {
-		return HACTxType(dat[2])
-	} else if v > 0xf7 {
-		return HACTxType(dat[1+v-0xf7+1])
-	}
-	return HACTxTypeUnknown
+	return tx.Type
 }
 
 func unmarshalHACTx[Tx any](dat []byte) (btx *HACTx, err error) {
 	var txt hacTxTmpl[Tx]
-	err = rlp.DecodeBytes(dat, &txt)
+	err = json.Unmarshal(dat, &txt)
 	if err != nil {
 		return
 	}
@@ -117,5 +113,5 @@ func UnmarshalHACTx(dat []byte) (btx *HACTx, err error) {
 }
 
 func MarshalHACTx(btx *HACTx) (dat []byte, err error) {
-	return rlp.EncodeToBytes(btx)
+	return json.Marshal(btx)
 }
