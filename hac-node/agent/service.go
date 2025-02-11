@@ -185,6 +185,7 @@ type BlockInfo struct {
 	ProposerAddress string `json:"proposerAddress"`
 	ProposalId      int64  `json:"proposalId"`
 	Discussions     uint64 `json:"discussions"`
+	TransactionCnt  uint64 `json:"transactionCnt"`
 }
 
 type GetLatestBlocksResponse struct {
@@ -213,6 +214,7 @@ func (s *Service) handleGetLatestBlocks(c *gin.Context) {
 	info.Proposer = validator.Name
 	info.ProposerId = validator.Id
 	info.ProposerAddress = validator.Address
+	info.TransactionCnt = uint64(len(block.Txs))
 
 	proposal, err := s.indexer.getProposalByHeight(uint64(s.indexer.Height))
 	if proposal == nil || proposal.Id == 0 {
