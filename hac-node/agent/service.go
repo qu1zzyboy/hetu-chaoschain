@@ -155,7 +155,13 @@ func (s *Service) handleGetNetworkStatus(c *gin.Context) {
 	response.BlockHeight = uint64(s.indexer.Height)
 	block := s.indexer.BlockStore.LoadBlockMeta(s.indexer.Height)
 	if block != nil {
-		response.LastProposer = block.Header.ProposerAddress.String()
+		validator, err := s.indexer.getValidatorByAddress(block.Header.ProposerAddress.String())
+		if err != nil {
+			s.indexer.logger.Error("get validator by address", "error", err)
+		}
+		if validator.Name != "" {
+			response.LastProposer = validator.Name
+		}
 	}
 	proposalsInProgress, err := s.indexer.getProposalsInProcess()
 	if err != nil {
