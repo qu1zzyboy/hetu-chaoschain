@@ -294,7 +294,11 @@ func NewChainIndexer(logger cmtlog.Logger, dbPath string, chainUrl string, bs *s
 		return nil, err
 	}
 
-	DiscussionTrigger = rand.New(rand.NewSource(time.Now().UnixNano())).Intn(DiscussionRate)
+	if DiscussionRate > 0 {
+		DiscussionTrigger = rand.New(rand.NewSource(time.Now().UnixNano())).Intn(DiscussionRate)
+	} else {
+		DiscussionTrigger = 0
+	}
 
 	c := ChainIndexer{
 		logger:        logger.With("module", "indexer"),
