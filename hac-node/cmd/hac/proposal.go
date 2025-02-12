@@ -42,7 +42,7 @@ func init() {
 	newProposalCmd.Flags().BoolVarP(&newProposalArgs.NoSend, "nosend", "", false, "not send transaction but print signature")
 	newProposalCmd.Flags().StringVarP(&newProposalArgs.Sig, "sig", "", "", "transaction signatures")
 	newProposalCmd.Flags().StringVarP(&newProposalArgs.Title, "title", "t", "New Proposal", "proposal title")
-	newProposalCmd.Flags().StringVarP(&newProposerArgs.AgentUrl, "agent", "a", "http://127.0.0.1/3000", "agent")
+	newProposalCmd.Flags().StringVarP(&newProposerArgs.AgentUrl, "agent", "a", "http://127.0.0.1/3000/proposal_title", "agent")
 }
 
 func newProposalRun(cmd *cobra.Command, args []string) {

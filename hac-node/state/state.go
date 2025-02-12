@@ -600,11 +600,14 @@ func (s *State) Proposal(tx *tx.ProposalTx, validator uint64, checkOnly bool, co
 
 		event = &hac_types.EventProposal{
 			ProposalIndex:   proposal.Index,
-			ProposerAddress: a.Address(),
 			Proposer:        a.Index,
+			ProposerAddress: a.Address(),
 			EndHeight:       tx.EndHeight,
 			Status:          uint64(proposal.Status),
 			Data:            proposal.Data,
+			Title:           proposal.Title,
+			Link:            proposal.Link,
+			ImageUrl:        proposal.ImageUrl,
 		}
 	}
 	return
