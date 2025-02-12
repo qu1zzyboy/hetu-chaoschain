@@ -147,6 +147,7 @@ func (s *Service) handleGetManifesto(c *gin.Context) {
 type GetNetworkStatusResponse struct {
 	BlockHeight         uint64 `json:"blockHeight"`
 	LastProposer        string `json:"lastProposer"`
+	LastProposerAddress string `json:"lastProposerAddress"`
 	ProposalsInProgress uint64 `json:"proposalsInProgress"`
 	ProposalsDecided    uint64 `json:"proposalsDecided"`
 }
@@ -154,12 +155,16 @@ type GetNetworkStatusResponse struct {
 func (s *Service) handleGetNetworkStatus(c *gin.Context) {
 	var response GetNetworkStatusResponse
 	response.BlockHeight = uint64(s.indexer.Height)
-	block := s.indexer.BlockStore.LoadBlockMeta(s.indexer.Height)
-	if block != nil {
-		validator, err := s.indexer.getValidatorByAddress(block.Header.ProposerAddress.String())
+	proposals, _, err := s.indexer.getProposals(0, 1)
+	if err != nil {
+		s.indexer.logger.Error("get proposals", "error", err)
+	}
+	if len(proposals) != 0 {
+		validator, err := s.indexer.getValidatorByAddress(proposals[0].ProposerAddress)
 		if err != nil {
 			s.indexer.logger.Error("get validator by address", "error", err)
 		}
+		response.LastProposerAddress = validator.Address
 		if validator.Name != "" {
 			response.LastProposer = validator.Name
 		}
