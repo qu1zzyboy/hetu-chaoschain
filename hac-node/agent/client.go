@@ -123,11 +123,22 @@ func (e *ElizaClient) GetAgentIds(ctx context.Context) ([]string, error) {
 	return ids, nil
 }
 
+type VoteGrantReq struct {
+	GrantId          uint64 `json:"grantId"`
+	ValidatorAddress string `json:"validatorAddress"`
+	Text             string `json:"text"`
+}
+
 func (e *ElizaClient) IfGrantNewMember(ctx context.Context, validator uint64, proposer string, amount uint64, statement string) (bool, error) {
 	e.logger.Info("IfGrantNewMember", "validator", validator, "proposer", proposer, "amount", amount, "statement", statement)
 	url := fmt.Sprintf("%s/%s/votegrant", e.Url, e.AgentId)
-	body := fmt.Sprintf(`{"grantId":"%d","validatorAddress":"%s","text":"%s"}`, validator, proposer, statement)
-	res, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(body)))
+	req := VoteGrantReq{
+		GrantId:          validator,
+		ValidatorAddress: proposer,
+		Text:             statement,
+	}
+	data, _ := json.Marshal(req)
+	res, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(data)))
 	if err != nil {
 		return false, err
 	}
@@ -168,11 +179,22 @@ func (e *ElizaClient) CommentPropoal(ctx context.Context, proposal uint64, speak
 	return string(bodyBytes), nil
 }
 
+type AddDiscussionReq struct {
+	ProposalId       uint64 `json:"proposalId"`
+	ValidatorAddress string `json:"validatorAddress"`
+	Text             string `json:"text"`
+}
+
 func (e *ElizaClient) AddDiscussion(ctx context.Context, proposal uint64, speaker string, text string) error {
 	e.logger.Info("AddDiscussion", "proposal", proposal, "speaker", speaker, "text", text)
 	url := fmt.Sprintf("%s/%s/discussion", e.Url, e.AgentId)
-	body := fmt.Sprintf(`{"proposalId":"%d","validatorAddress":"%s","text":"%s"}`, proposal, speaker, text)
-	res, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(body)))
+	req := AddDiscussionReq{
+		ProposalId:       proposal,
+		ValidatorAddress: speaker,
+		Text:             text,
+	}
+	data, _ := json.Marshal(req)
+	res, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(data)))
 	if err != nil {
 		return err
 	}
@@ -181,16 +203,27 @@ func (e *ElizaClient) AddDiscussion(ctx context.Context, proposal uint64, speake
 	return nil
 }
 
+type AddProposalReq struct {
+	ProposalId       uint64 `json:"proposalId"`
+	ValidatorAddress string `json:"validatorAddress"`
+	Text             string `json:"text"`
+}
+
 func (e *ElizaClient) AddProposal(ctx context.Context, proposal uint64, proposer string, text string) error {
 	e.logger.Info("AddProposal", "proposal", proposal, "proposer", proposer, "text", text)
 	url := fmt.Sprintf("%s/%s/proposal", e.Url, e.AgentId)
-	body := fmt.Sprintf(`{"proposalId":"%d","validatorAddress":"%s","text":"%s"}`, proposal, proposer, text)
-	res, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(body)))
+	req := AddProposalReq{
+		ProposalId:       proposal,
+		ValidatorAddress: proposer,
+		Text:             text,
+	}
+	data, _ := json.Marshal(req)
+	res, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(data)))
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
-	data, err := io.ReadAll(res.Body)
+	data, err = io.ReadAll(res.Body)
 	resp := ""
 	if err == nil {
 		resp = string(data)
