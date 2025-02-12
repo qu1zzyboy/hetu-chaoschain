@@ -190,7 +190,12 @@ func (e *ElizaClient) AddProposal(ctx context.Context, proposal uint64, proposer
 		return err
 	}
 	defer res.Body.Close()
-	e.logger.Info("add proposal", "proposal", proposal, "proposer", proposer, "text", text)
+	data, err := io.ReadAll(res.Body)
+	resp := ""
+	if err == nil {
+		resp = string(data)
+	}
+	e.logger.Info("add proposal", "proposal", proposal, "proposer", proposer, "text", text, "resp", resp)
 	return nil
 }
 
