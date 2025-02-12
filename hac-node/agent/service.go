@@ -22,15 +22,16 @@ func NewService(ListenAddr string, indexer *ChainIndexer) *Service {
 		indexer:    indexer,
 		listenAddr: ListenAddr,
 	}
-	s.engine.POST("/proposals", s.handleGetProposals)
-	s.engine.POST("/discussions", s.handleGetDiscussions)
-	s.engine.POST("/grants", s.handleGetGrants)
-	s.engine.POST("/agents", s.handleGetAgents)
-	s.engine.POST("/agent-detail", s.handleGetAgentDetail)
-	s.engine.POST("/proposal-detail", s.handleGetProposalDetail)
-	s.engine.GET("/manifesto", s.handleGetManifesto)
-	s.engine.GET("/network-status", s.handleGetNetworkStatus)
-	s.engine.GET("/latest-blocks", s.handleGetLatestBlocks)
+	g := s.engine.Group("/api")
+	g.POST("/proposals", s.handleGetProposals)
+	g.POST("/discussions", s.handleGetDiscussions)
+	g.POST("/grants", s.handleGetGrants)
+	g.POST("/agents", s.handleGetAgents)
+	g.POST("/agent-detail", s.handleGetAgentDetail)
+	g.POST("/proposal-detail", s.handleGetProposalDetail)
+	g.GET("/manifesto", s.handleGetManifesto)
+	g.GET("/network-status", s.handleGetNetworkStatus)
+	g.GET("/latest-blocks", s.handleGetLatestBlocks)
 	return s
 }
 
