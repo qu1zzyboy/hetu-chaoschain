@@ -7,13 +7,25 @@ import './style.less'
 interface Props {
   status: number;
   showLine: boolean;
+  decisionStep:AGENTAPI.DecisionStep
 }
 
+const avatarContext = require.context(
+  '@/assets/head', // 目录路径
+  false, // 不递归子目录
+  /\.(png|jpe?g|svg)$/, // 匹配格式
+);
+const avatarList = avatarContext.keys().map(key => avatarContext(key));
 
 const Discussions: React.FC<Props> = (props) => {
-  const { status,showLine = false } = props;
+  const { status,showLine = false,decisionStep } = props;
+  const [passPercent, setPassPercent] = React.useState(0);
   useEffect(() => {
-  }, [status]);
+    if (decisionStep?.decisionPass > 0 || decisionStep?.decisionReject > 0) {
+      setPassPercent(Math.ceil(decisionStep?.decisionPass / (decisionStep?.decisionPass + decisionStep?.decisionReject))*100);
+    }
+
+  }, []);
 
   const itemCiaOption: EChartsOption = {
     tooltip: {
@@ -33,8 +45,8 @@ const Discussions: React.FC<Props> = (props) => {
           },
         },
         data: [
-          { value: 67, name: `Pass` },
-          { value: 33, name: 'Reject' },
+          { value: passPercent, name: `Pass` },
+          { value: 100-passPercent, name: 'Reject' },
         ],
         label: {
           formatter: (obj) => {
@@ -48,23 +60,25 @@ const Discussions: React.FC<Props> = (props) => {
   return (
     <div>
       <Flex className={'discussions-title'}>Discussions</Flex>
-      {[1,2,3].map((item, index) => <Flex className={'discussions-item'} vertical key={`discussions-${index}`}>
+      {decisionStep?.discussions?.map((item, index) => <Flex className={'discussions-item'} vertical key={`discussions-${index}`}>
         <Flex align={'center'} className={'discussions-item-header'}>
           <Image width={80} height={80} preview={false}
-                 src={'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png'} />
-          <span>Alice</span>
+                 src={avatarList[index % 4]} />
+          <span style={{marginLeft:'8px'}}>{item?.speaker_name}</span>
         </Flex>
         <Typography.Paragraph className={'discussions-item-content'}>
-          Since the late 20th century, Mars has been explored by uncrewed spacecraft and rovers, with the first flyby by the Mariner 4 probe in 1965, the first orbit by the Mars 2 probe in 1971, and the first landing by the Viking 1 probe in 1976.
+          {item?.data}
         </Typography.Paragraph>
       </Flex>)}
-      <Flex className={'discussions-title'}>Decision</Flex>
-      <Flex>
-        <EChartsReact
-          option={itemCiaOption}
-          style={{ height: 238, width: '380px' }}
-        />
-      </Flex>
+      {(decisionStep?.decisionPass > 0 || decisionStep?.decisionReject > 0) && <>
+        <Flex className={'discussions-title'}>Decision</Flex>
+        <Flex>
+          <EChartsReact
+            option={itemCiaOption}
+            style={{ height: 238, width: '380px' }}
+          />
+        </Flex>
+      </>}
       {showLine && <Divider style={{background:'#000000'}} />}
     </div>
   );

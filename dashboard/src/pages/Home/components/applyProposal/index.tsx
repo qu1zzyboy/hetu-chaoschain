@@ -21,7 +21,7 @@ const ApplyProposal: React.FC<Props> = (props) => {
   },[isOpen])
   return (
     <>
-      <FloatButton type='primary' icon={<PlusOutlined />} onClick={() => setIsOpen(true)} />
+      <FloatButton type='primary' icon={<PlusOutlined />}/>
       {isOpen &&
         <ModalForm
           form={form}
