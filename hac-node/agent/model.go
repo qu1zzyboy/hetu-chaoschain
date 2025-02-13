@@ -14,6 +14,7 @@ type ValidatorAgent struct {
 	AgentUrl  string `json:"agentUrl"`
 	Name      string `json:"name"`
 	SelfIntro string `json:"self_intro"`
+	HeadPhoto string `json:"head_photo"`
 }
 
 type Proposal struct {
@@ -65,11 +66,12 @@ type GrantVote struct {
 }
 
 type Discussion struct {
-	Id             uint64 `gorm:"primaryKey" json:"id"`
-	Proposal       uint64 `json:"proposal"`
-	SpeakerIndex   uint64 `json:"speaker_index"`
-	SpeakerAddress string `json:"speaker_address"`
-	SpeakerName    string `json:"speaker_name"`
-	Data           string `json:"data"`
-	Height         uint64 `json:"height"`
+	Id              uint64 `gorm:"primaryKey" json:"id"`
+	Proposal        uint64 `json:"proposal"`
+	SpeakerIndex    uint64 `json:"speaker_index"`
+	SpeakerAddress  string `json:"speaker_address"`
+	SpeakerName     string `json:"speaker_name"`
+	Data            string `json:"data"`
+	Height          uint64 `json:"height"`
+	CreateTimestamp int64  `json:"create_timestamp"`
 }

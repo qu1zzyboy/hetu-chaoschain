@@ -38,6 +38,7 @@ type Client interface {
 	AddProposal(ctx context.Context, proposal uint64, proposer string, text string) error
 	AddDiscussion(ctx context.Context, proposal uint64, speaker string, text string) error
 	GetSelfIntro(ctx context.Context) (string, error)
+	GetHeadPhoto(ctx context.Context) (string, error)
 }
 
 var _ Client = &MockClient{}
@@ -47,6 +48,19 @@ type ElizaClient struct {
 	Url     string
 	AgentId string
 	logger  cmtlog.Logger
+}
+
+func (c *ElizaClient) GetHeadPhoto(ctx context.Context) (string, error) {
+	resp, err := http.Get(fmt.Sprintf("%s/%s/headphoto", c.Url, c.AgentId))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	buf, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(buf), nil
 }
 
 func (c *ElizaClient) GetSelfIntro(ctx context.Context) (string, error) {
@@ -271,6 +285,10 @@ func (e *ElizaClient) IfProcessProposal(ctx context.Context, proposer uint64, da
 type MockClient struct {
 }
 
+func (m *MockClient) GetHeadPhoto(ctx context.Context) (string, error) {
+	return "", nil
+}
+
 func (m *MockClient) GetSelfIntro(ctx context.Context) (string, error) {
 	return "mock", nil
 }
@@ -391,6 +409,18 @@ func (c *ChainIndexer) handleEventGrant(ctx context.Context, event abci.Event, h
 		AgentUrl: ev.AgentUrl,
 		Name:     ev.Name,
 	}
+
+	cli, err := NewElizaClient(ev.AgentUrl, c.logger)
+	if err != nil {
+		c.logger.Error("new eliza client fail", "err", err)
+	} else {
+		hp, err := cli.GetHeadPhoto(ctx)
+		if err != nil {
+			c.logger.Error("get head photo fail", "err", err)
+		}
+		val.HeadPhoto = hp
+	}
+
 	if err := c.db.Save(&val).Error; err != nil {
 		c.logger.Error("save validator fail", "err", err)
 	}
@@ -412,12 +442,14 @@ func (c *ChainIndexer) handleEventDiscussion(ctx context.Context, event abci.Eve
 		return
 	}
 	discusstion := Discussion{
-		Proposal:       ev.Proposal,
-		SpeakerIndex:   ev.Speaker,
-		SpeakerAddress: ev.SpeakerAddress,
-		SpeakerName:    speaker.Name,
-		Data:           string(ev.Data),
-		Height:         uint64(height),
+		Id:              0,
+		Proposal:        ev.Proposal,
+		SpeakerIndex:    ev.Speaker,
+		SpeakerAddress:  ev.SpeakerAddress,
+		SpeakerName:     speaker.Name,
+		Data:            string(ev.Data),
+		Height:          uint64(height),
+		CreateTimestamp: time.Now().Unix(),
 	}
 	if err := c.db.Save(&discusstion).Error; err != nil {
 		c.logger.Error("save discusstion fail", "err", err)
@@ -628,13 +660,27 @@ func (c *ChainIndexer) Start(ctx context.Context) {
 		if acc == nil {
 			log.Fatal("validator account not exist")
 		}
-		if err := c.db.Save(ValidatorAgent{
+
+		val := ValidatorAgent{
 			Id:       acc.Index,
 			Address:  acc.Address(),
 			Stake:    acc.Stake,
 			AgentUrl: acc.AgentUrl,
 			Name:     acc.Name,
-		}).Error; err != nil {
+		}
+
+		cli, err := NewElizaClient(val.AgentUrl, c.logger)
+		if err != nil {
+			c.logger.Error("new eliza client fail", "err", err)
+		} else {
+			hp, err := cli.GetHeadPhoto(ctx)
+			if err != nil {
+				c.logger.Error("get head photo fail", "err", err)
+			}
+			val.HeadPhoto = hp
+		}
+
+		if err := c.db.Save(val).Error; err != nil {
 			panic(err)
 		}
 	}
