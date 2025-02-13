@@ -3,7 +3,7 @@ import React from 'react';
 import './index.less'
 
 interface Props {
-  passPercent: number;
+  passPercent: number,
 }
 
 const ProgressBar: React.FC<Props> = (props) => {

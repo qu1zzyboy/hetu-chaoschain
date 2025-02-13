@@ -1,10 +1,10 @@
 import { Flex } from 'antd';
 import React, { useEffect } from 'react';
-import { CheckCircleFilled } from '@ant-design/icons';
+import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
 import './index.less';
 
 interface Props {
-  status: 1 | 2 | 3 | 4;
+  status?: number;
 }
 
 interface ItemClass {
@@ -22,27 +22,26 @@ const BottomProgressBar: React.FC<Props> = (props) => {
     setItemClasses([
       {
         text:'Draft',
-        icon: <CheckCircleFilled />,
-        textColor: 'text-red',
-        progressColor: 'progress-red',
+        icon:status === 1 ?<CloseCircleFilled />: <CheckCircleFilled />,
+        textColor: status === 1 ?'text-red': 'text-green',
+        progressColor: status === 1 ?'progress-red': 'progress-green-1',
       },
       {
         text:'Discussion',
-        icon: null,
-        textColor: 'text-yellow',
-        progressColor: 'progress-yellow',
+        icon: (status === 3 || status === 4) ? <CheckCircleFilled />:null,
+        textColor: status === 1?'text-gray':'text-green',
+        progressColor: status === 1?'progress-gray':(status === 2 || status === 4?'progress-green-3':'progress-green-3'),
       },
       {
         text:'Decision',
-        icon: null,
-        textColor: 'text-green',
-        progressColor: 'progress-green-3',
+        icon: (status === 3 && <CheckCircleFilled />) || (status === 4 && <CloseCircleFilled />),
+        textColor: status === 3 ?'text-green':(status === 4 ?'text-red':'text-gray'),
+        progressColor: status === 3 ?'progress-green-3':(status === 4 ?'progress-red':'progress-gray'),
       }]);
   }, [status]);
 
   return (
     <Flex justify={'space-between'} vertical align={'center'} style={{ width: `100%` }}>
-
       <Flex className={'progress-item-base'} style={{ width: '100%' }}>
         {itemClasses?.map((item, index) => <Flex key={`progress-name-${index}`} className={`${item?.textColor}`} justify={'center'} flex={1}>
           <span>{`${item?.text}  `}{item?.icon}</span>

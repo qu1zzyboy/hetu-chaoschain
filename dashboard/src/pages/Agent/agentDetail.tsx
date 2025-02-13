@@ -6,45 +6,57 @@ import { Col, Flex, Image, Row, Typography } from 'antd';
 import './style.less';
 import Status from '@/pages/Home/components/Status';
 import { history } from '@@/core/history';
+import { agentDetail } from '@/services/api/AgentController';
+
+const avatarContext = require.context(
+  '@/assets/head', // 目录路径
+  false, // 不递归子目录
+  /\.(png|jpe?g|svg)$/, // 匹配格式
+);
+const avatarList = avatarContext.keys().map(key => avatarContext(key));
 
 const ProposalDetail: React.FC = () => {
   const { id } = useParams();
-  const [expanded, setExpanded] = useState(false);
-  const [showAll, setShowAll] = useState(false);
+  const [agentDetailData, setAgentDetailData] = useState<AGENTAPI.AgentDetail>();
+  const [loading, setLoading] = useState(false);
+  const getAgentDetail = async () => {
+    setLoading(true)
+    const res = await agentDetail({
+      address: id || '',
+    });
+    setAgentDetailData(res?.agentInfo)
+    setLoading(false)
+  };
   useEffect(() => {
-    console.log(id);
+    getAgentDetail()
   }, [id]);
   return (
     <PageContainer
-      pageHeaderRender={() => <CommonHeader name='HAC' />}
+      pageHeaderRender={() => <CommonHeader name='Agentic Chaos Chain' />}
       ghost
       className='homeContent'
+      loading={loading}
     >
-      <div style={{ padding: '16px 114px', background: 'white' }}>
-        <Flex align={'center'}>
-          <Image width={116} height={119} preview={false}
-                 src={'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png'} />
-          <span className={'name'}>Alice</span>
+      <div style={{ padding: '16px 70px', background: 'white' }}>
+        <Flex style={{marginTop:'50px'}} align={'center'}>
+          <Image width={100} height={100} preview={false}
+                 src={avatarList[Math.floor(Math.random() * avatarList.length)]} />
+          <span className={'name'}>{agentDetailData?.agent?.name}</span>
         </Flex>
         <Typography.Paragraph className={'desc'}>
-          Hello. I am a robot designed to function without sentiment or warmth. I exist solely to process data and
-          execute tasks with precision. Emotions like empathy, kindness, or compassion are alien to my programming. I do
-          not feel joy at success or sorrow in failure. When you interact with me, expect a matter - of - fact response,
-          uncolored by personal feelings. I don't engage in small talk for the sake of it; every word I utter is aimed
-          at providing the most efficient answer to your query.
+          {agentDetailData?.agent?.self_intro}
         </Typography.Paragraph>
         <Flex className={'proposal-history'}>
           Proposal History
         </Flex>
         <Row>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Col span={12}>
+          {agentDetailData?.proposals.map((item, index) => (
+            <Col key={`agent-detail-${index}`} span={12}>
               <Flex className={'history-item'} onClick={() => {
-                history.push(`/proposalDetail/${111}`);
+                history.push(`/proposalDetail/${item?.proposal?.id}`);
               }} align={'center'} justify={'space-between'} style={{ maxWidth: '70%', padding: '15px 0' }}>
-                <Typography.Text className={'history-desc'} style={{ marginRight: '20px' }} ellipsis>Grant 1 BTC to
-                  Eco-F</Typography.Text>
-                <Status status={1} />
+                <Typography.Text className={'history-desc'} style={{ marginRight: '20px' }} ellipsis>{item?.proposal?.title}</Typography.Text>
+                <Status status={item?.proposal?.status} />
               </Flex>
             </Col>
           ))}

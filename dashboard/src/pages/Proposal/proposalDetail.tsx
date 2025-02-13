@@ -1,71 +1,121 @@
 import { PageContainer } from '@ant-design/pro-components';
 import CommonHeader from '@/components/CommonHeader/CommonHeader';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams } from 'umi';
 import { Flex, Image, Typography } from 'antd';
-import './index.less'
+import './index.less';
 import { DoubleRightOutlined, DownOutlined } from '@ant-design/icons';
 import BottomProgressBar from '@/pages/Home/components/bottomProgressBar/BottomProgressBar';
 import Status from '@/pages/Home/components/Status';
 import Discussions from '@/pages/Proposal/components/discussions';
+import { proposalDetail } from '@/services/api/AgentController';
+import moment from 'moment/moment';
+const Markdown = require('react-remarkable');
+
+// @ts-ignore
+const avatarContext = require.context(
+  '@/assets/head', // 目录路径
+  false, // 不递归子目录
+  /\.(png|jpe?g|svg)$/, // 匹配格式
+);
+// @ts-ignore
+const avatarList = avatarContext.keys().map(key => avatarContext(key));
+
+
 const ProposalDetail: React.FC = () => {
   const { id } = useParams();
   const [expanded, setExpanded] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [resultData, setResultData] = useState<AGENTAPI.ProposalDetailRes>();
+  const [isEllipsis, setIsEllipsis] = useState(false);
+  const [head, setHead] = useState<React.ReactNode | undefined>();
+  const getProposalDetail = async () => {
+    const res = await proposalDetail({
+      proposalId: Number(id || 0),
+    });
+    setResultData(res);
+  };
   useEffect(() => {
-    console.log(id);
-  },[id])
+    getProposalDetail();
+    setHead(avatarList[Math.floor(Math.random() * avatarList.length)] || undefined);
+  }, [id]);
+
+
+  useEffect(() => {
+    console.log('isEllipsis', isEllipsis);
+  }, [isEllipsis]);
+
   return (
     <PageContainer
-      pageHeaderRender={() => <CommonHeader name='HAC' />}
+      pageHeaderRender={() => <CommonHeader name='Agentic Chaos Chain' />}
       ghost
       className='homeContent'
     >
-      <div style={{ padding: '16px 114px', background: 'white' }}>
-        <Flex align={'center'}>
-          <Image width={116} height={119} preview={false}
-                 src={'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png'} />
-          <span className={'name'}>Alice</span>
+      <div style={{ padding: '16px 70px', background: 'white' }}>
+        <Flex style={{ marginTop: '50px' }} align={'center'}>
+          <Image width={100} height={100} preview={false}
+            // @ts-ignore
+                 src={head} />
+          <span className={'name'}>{resultData?.proposal?.proposer_name}</span>
         </Flex>
         <Flex align={'center'} justify={'space-between'}>
-          <Flex vertical flex={1} style={{marginRight:'20px'}}>
+          <Flex vertical flex={1} style={{ marginRight: '20px' }}>
             <Flex style={{ padding: '0' }}>
               <Typography.Text ellipsis className={'desc'}>
-                Let's Build Spaceship To Mars！Let's Build Spaceship To Mars！Let's Build Spaceship To Mars！
+                {resultData?.proposal?.title}
               </Typography.Text>
             </Flex>
             <Flex style={{ padding: '0' }}>
               <Typography.Text className={'expire'}>
-                # Expire 2025-01-21 23:59:59
+                {`# Expire ${moment.unix(resultData?.proposal?.expire_timestamp || 0).format('YYYY-MM-DD HH:mm:ss')}`}
               </Typography.Text>
             </Flex>
           </Flex>
-          <Status status={1} />
+          <Status status={resultData?.proposal?.status} />
         </Flex>
-        <Flex style={{ paddingTop: '10px' }}>
-          <Typography.Paragraph
-            ellipsis={{
-              rows:2,
-              expandable: 'collapsible',
-              expanded,
-              onExpand: (_, info) => setExpanded(info.expanded),
-              symbol: expanded ? '' : <span className={'expanded-text'}>view full text <DownOutlined /></span>,
-            }}
-            className={'content'}>
-            I have heard of your paintings too, well enough; God has given you one face, and you make yourselves another: you jig and amble, and you lisp, and nickname God's creatures, and make your wantonness your ignorance. Go to, I'll no more on't; it hath made me mad. I say, we will have no more marriages: those that are married already, all but one, shall live; the rest shall keep as they are. To a nunnery, go.
-          </Typography.Paragraph>
+        <Flex className={'markdown-base'} style={{ paddingTop: '10px',maxWidth: '100%' }}>
+          <Markdown className={'content-markdown'}>
+            {
+              resultData?.proposal?.data
+            }
+          </Markdown>
+          {/*<Typography.Paragraph*/}
+          {/*  ellipsis={{*/}
+          {/*    rows: 3,*/}
+          {/*    expandable: 'collapsible',*/}
+          {/*    expanded,*/}
+          {/*    onExpand: (_, info) => {*/}
+          {/*      setExpanded(info.expanded);*/}
+          {/*    },*/}
+          {/*    symbol: !expanded ? (*/}
+          {/*      <span className='expanded-text'>*/}
+          {/*  view full text <DownOutlined style={{ fontSize: 10 }} />*/}
+          {/*</span>*/}
+          {/*    ) : null,*/}
+          {/*  }}*/}
+          {/*  className={'content'}*/}
+          {/*>*/}
+          {/*  {resultData?.proposal?.data}*/}
+          {/*</Typography.Paragraph>*/}
         </Flex>
-        <Flex className={'progress-bar-base'} style={{width:'550px'}}>
-          <BottomProgressBar status={3} />
+        <Flex className={'progress-bar-base'} style={{ width: '550px' }}>
+          <BottomProgressBar status={resultData?.proposal?.status} />
         </Flex>
         <Flex vertical>
-          {[1,3,4]?.map((item,index)=> {
-            return showAll  ? <Discussions showLine={showAll && index < [1,2,3].length-1} status={index} /> : (index === 0 ? <Discussions showLine={showAll && index < [1,2,3].length-1} status={index} /> : null);
+          {resultData?.decisionSteps?.map((item, index) => {
+            return showAll ? <Discussions key={`discussions-${index}`} decisionStep={item}
+                                          showLine={(showAll && resultData?.decisionSteps && index < resultData?.decisionSteps?.length - 1) || false}
+                                          status={index} />
+              : (index === 0 ? <Discussions key={`discussions-${index}`} decisionStep={item}
+                                            showLine={showAll && resultData?.decisionSteps && index < resultData?.decisionSteps?.length - 1}
+                                            status={index} /> : null);
           })}
         </Flex>
-        {([1,3,4].length > 1 && !showAll) && <Flex justify={'center'} align={'center'}>
-          <a className={'show-all'} onClick={() => setShowAll(true)}>View Previous <DoubleRightOutlined style={{ transform: 'rotate(90deg)' }} /></a>
-        </Flex>}
+        {(resultData?.decisionSteps && resultData?.decisionSteps?.length > 1 && !showAll) &&
+          <Flex justify={'center'} align={'center'}>
+            <a className={'show-all'} onClick={() => setShowAll(true)}>View Previous <DoubleRightOutlined
+              style={{ transform: 'rotate(90deg)' }} /></a>
+          </Flex>}
       </div>
     </PageContainer>
   );
