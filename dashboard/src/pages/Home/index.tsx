@@ -104,8 +104,8 @@ const HomePage: React.FC = () => {
     return result * 100;
   };
    useEffect(() => {
-    setPageStr(`${1+(pageNum - 1) * 6} - ${pageNum * 6 <= listTotal ? pageNum * 6 : pageNum * 6 - Math.abs(pageNum * 6 - listTotal)}`)
-  }, [pageNum,listTotal])
+     setPageStr(`${1+(pageNum - 1) * 6} - ${pageNum * 6 <= listTotal ? pageNum* 6: pageNum* 6 - Math.abs(pageNum * 6 - listTotal)}`)
+  },[pageNum,listTotal])
 
   return (
     <PageContainer
