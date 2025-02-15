@@ -51,7 +51,7 @@ const HomePage: React.FC = () => {
   const [latestBlocksData, setLatestBlocksData] = useState<AGENTAPI.BlockInfo | null>();
   const [pageNum, setPageNum] = useState<number>(1);
   const [listTotal, setListTotal] = useState<number>(0);
-  const [pageStr, setPageStr] = useState<string>();
+  const [pageStr , setPageStr] = useState<string>();
   const getNetworkStatus = async () => {
     const res = await networkStatus();
     setNetworkStatusData(res);
@@ -103,9 +103,9 @@ const HomePage: React.FC = () => {
     }
     return result * 100;
   };
-  useEffect(() => {
-    setPageStr(`${1 + (pageNum - 1) * 6} - ${pageNum * 6 <= listTotal ? pageNum * 6 : pageNum * 6 - Math.abs(pageNum * 6 - listTotal)}`)
-  }, [pageNum, listTotal])
+   useEffect(() => {
+    setPageStr(`${1+(pageNum - 1) * 6} - ${pageNum * 6 <= listTotal ? pageNum * 6 : pageNum * 6 - Math.abs(pageNum * 6 - listTotal)}`)
+  }, [pageNum,listTotal])
 
   return (
     <PageContainer
@@ -320,7 +320,7 @@ const HomePage: React.FC = () => {
         </div>
       </div>
       <ApplyProposal onSuccess={() => console.log('success,refresh!')} />
-    </PageContainer >
+    </PageContainer>
   );
 };
 
