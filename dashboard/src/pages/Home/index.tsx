@@ -24,7 +24,6 @@ import ProList from '@ant-design/pro-list/lib';
 import { agents, latestBlocks, manifesto, networkStatus, proposals } from '@/services/api/AgentController';
 import moment from 'moment';
 import image32 from '@/assets/image32.png';
-
 const StyledCard = styled(Card)`
   transition: background-color 0.3s, box-shadow 0.3s;
   background-color: #EFEFEF;

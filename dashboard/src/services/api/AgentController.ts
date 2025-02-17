@@ -1,5 +1,6 @@
 import { request } from '@umijs/max';
-
+import { BASE_URL } from '@/constants/config';
+console.log(BASE_URL)
 export async function proposals(
   body: AGENTAPI.ProposalsReq,
   options?: { [key: string]: any },
@@ -41,7 +42,7 @@ export async function manifesto(
 export async function agents(
   options?: { [key: string]: any },
 ) {
-  return request<AGENTAPI.AgentsRes>('/api/agents', {
+  return request<AGENTAPI.AgentsRes>(`${BASE_URL ?? '/api'}/agents`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

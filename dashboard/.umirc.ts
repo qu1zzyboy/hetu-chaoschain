@@ -11,6 +11,9 @@ export default defineConfig({
   layout: {
     // title: '@umijs/max',
   },
+  define:{
+    'process.env.BASE_URL' : process.env.BASE_URL
+  },
   routes: [
     {
       path: '/',
